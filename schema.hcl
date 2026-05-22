@@ -1,9 +1,8 @@
 table "users" {
   schema = schema.main
   column "id" {
-    null = false
-    type = integer
-    primary_key = true
+    null           = false
+    type           = integer
     auto_increment = true
   }
   column "username" {
@@ -15,12 +14,15 @@ table "users" {
     type = text
   }
   column "created_at" {
-    null = false
-    type = datetime
+    null    = false
+    type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
+  primary_key {
+    columns = [column.id]
+  }
   index "idx_username" {
-    unique = true
+    unique  = true
     columns = [column.username]
   }
 }
@@ -30,7 +32,6 @@ table "sessions" {
   column "id" {
     null = false
     type = text
-    primary_key = true
   }
   column "user_id" {
     null = false
@@ -45,9 +46,12 @@ table "sessions" {
     type = datetime
   }
   column "created_at" {
-    null = false
-    type = datetime
+    null    = false
+    type    = datetime
     default = sql("CURRENT_TIMESTAMP")
+  }
+  primary_key {
+    columns = [column.id]
   }
   foreign_key "user_id_fk" {
     columns     = [column.user_id]
@@ -56,7 +60,7 @@ table "sessions" {
     on_delete   = CASCADE
   }
   index "idx_token" {
-    unique = true
+    unique  = true
     columns = [column.token]
   }
 }
@@ -64,9 +68,8 @@ table "sessions" {
 table "tasks" {
   schema = schema.main
   column "id" {
-    null = false
-    type = integer
-    primary_key = true
+    null           = false
+    type           = integer
     auto_increment = true
   }
   column "user_id" {
@@ -82,19 +85,22 @@ table "tasks" {
     type = text
   }
   column "status" {
-    null = false
-    type = text
+    null    = false
+    type    = text
     default = "pending"
   }
   column "created_at" {
-    null = false
-    type = datetime
+    null    = false
+    type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
   column "updated_at" {
-    null = false
-    type = datetime
+    null    = false
+    type    = datetime
     default = sql("CURRENT_TIMESTAMP")
+  }
+  primary_key {
+    columns = [column.id]
   }
   foreign_key "user_id_fk" {
     columns     = [column.user_id]
