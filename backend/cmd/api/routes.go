@@ -13,8 +13,8 @@ func registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/login", auth.LoginHandler)
 
 	// Protected routes
-	// We wrap handlers with AuthMiddleware to ensure only logged-in users can access them.
 	mux.Handle("/api/me", auth.AuthMiddleware(http.HandlerFunc(auth.MeHandler)))
+	mux.Handle("/api/logout", auth.AuthMiddleware(http.HandlerFunc(auth.LogoutHandler)))
 }
 
 // handleHealth provides a simple status check for the API.
