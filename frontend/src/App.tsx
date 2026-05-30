@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { Tasks } from './views/Tasks';
+import { Settings } from './views/Settings';
+import type { User } from './types';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -134,7 +137,7 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-500">
+    <div className="flex h-screen bg-background text-foreground transition-colors duration-500 overflow-hidden">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -142,7 +145,7 @@ function App() {
         onLogout={handleLogout} 
       />
       
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0">
         <Header 
           title={activeTab} 
           isDarkMode={isDarkMode} 
@@ -162,34 +165,9 @@ function App() {
             </div>
           )}
           
-          {activeTab === 'tasks' && (
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-lg font-medium">Engineering Tasks</h3>
-                  <p className="text-muted-foreground mt-1">Manage and track telephony requests.</p>
-                </div>
-                <button className="bg-foreground text-background px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-all active:scale-95">
-                  New Task
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 rounded-xl border border-border bg-card/50 flex items-center px-6 text-muted-foreground italic text-sm">
-                    Task row placeholder...
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {activeTab === 'tasks' && <Tasks />}
 
-          {activeTab === 'settings' && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="text-lg font-medium">Settings</h3>
-              <p className="text-muted-foreground mt-1">Configure your personal workspace.</p>
-            </div>
-          )}
+          {activeTab === 'settings' && <Settings />}
         </div>
       </main>
     </div>

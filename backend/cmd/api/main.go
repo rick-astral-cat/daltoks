@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,11 +18,10 @@ import (
 
 func main() {
 	createUser := flag.String("create-user", "", "Create an internal user (format: username:password)")
+	createEnv := flag.String("create-env", "", "Create an environment (format: 'Name:Description')")
 	flag.Parse()
 
 	// Initialize database
-	// Use a relative path that assumes the application is run from the directory where the DB resides.
-	// For local development in GoLand, ensure the Working Directory is set to the 'backend' folder.
 	err := db.InitDB("daltoks.db")
 	if err != nil {
 		log.Fatal(err)
@@ -31,9 +32,14 @@ func main() {
 		}
 	}()
 
-	// Process internal user creation if flag is provided
+	// Process CLI flags
 	if *createUser != "" {
 		auth.HandleCreateUser(*createUser)
+		return
+	}
+
+	if *createEnv != "" {
+		handleCreateEnv(*createEnv)
 		return
 	}
 
@@ -79,4 +85,24 @@ func main() {
 	}
 
 	log.Println("Server stopped cleanly")
+}
+
+func handleCreateEnv(input string) {
+	parts := strings.SplitN(input, ":", 2)
+	name := parts[0]
+	desc := ""
+	if len(parts) > 1 {
+		desc = parts[1]
+	}
+
+	if name == "" {
+		log.Fatal("Environment name cannot be empty")
+	}
+
+	_, err := db.DB.Exec(`INSERT INTO environments (name, description) VALUES (?, ?)`, name, desc)
+	if err != nil {
+		log.Fatal("Error creating environment: ", err)
+	}
+
+	fmt.Printf("Environment '%s' created successfully.\n", name)
 }

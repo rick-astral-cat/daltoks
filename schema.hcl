@@ -18,6 +18,10 @@ table "users" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
   primary_key {
     columns = [column.id]
   }
@@ -65,6 +69,39 @@ table "sessions" {
   }
 }
 
+table "environments" {
+  schema = schema.main
+  column "id" {
+    null           = false
+    type           = integer
+    auto_increment = true
+  }
+  column "name" {
+    null = false
+    type = text
+  }
+  column "description" {
+    null = true
+    type = text
+  }
+  column "created_at" {
+    null    = false
+    type    = datetime
+    default = sql("CURRENT_TIMESTAMP")
+  }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  index "idx_env_name" {
+    unique  = true
+    columns = [column.name]
+  }
+}
+
 table "tasks" {
   schema = schema.main
   column "id" {
@@ -78,6 +115,10 @@ table "tasks" {
   }
   column "assignee_id" {
     null = true
+    type = integer
+  }
+  column "environment_id" {
+    null = false
     type = integer
   }
   column "title" {
@@ -103,6 +144,10 @@ table "tasks" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
   primary_key {
     columns = [column.id]
   }
@@ -117,6 +162,12 @@ table "tasks" {
     ref_columns = [table.users.column.id]
     on_update   = NO_ACTION
     on_delete   = SET_NULL
+  }
+  foreign_key "environment_id_fk" {
+    columns     = [column.environment_id]
+    ref_columns = [table.environments.column.id]
+    on_update   = NO_ACTION
+    on_delete   = RESTRICT
   }
 }
 
