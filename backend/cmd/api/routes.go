@@ -27,6 +27,7 @@ func registerRoutes(mux *http.ServeMux) {
 			environment.ListEnvironmentsHandler(w, r)
 		}
 	})))
+	mux.Handle("/api/environments/update", auth.AuthMiddleware(http.HandlerFunc(environment.UpdateEnvironmentHandler)))
 	mux.Handle("/api/environments/delete", auth.AuthMiddleware(http.HandlerFunc(environment.SoftDeleteEnvironmentHandler)))
 	mux.Handle("/api/environments/archived", auth.AuthMiddleware(http.HandlerFunc(environment.ListArchivedEnvironmentsHandler)))
 	mux.Handle("/api/environments/restore", auth.AuthMiddleware(http.HandlerFunc(environment.RestoreEnvironmentHandler)))

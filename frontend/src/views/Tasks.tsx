@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Task, TaskUpdate, User } from '../types';
+import { toast } from 'sonner';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -113,21 +114,29 @@ export function Tasks() {
   };
 
   const handleDeleteTask = async (taskId: number) => {
-    if (!confirm("Move this task to trash? It will be hidden from all views.")) return;
-    try {
-      const res = await fetch('/api/tasks/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: taskId }),
-      });
-      if (res.ok) {
-        setSelectedTask(null);
-        setExpandedTaskId(null);
-        fetchTasks();
-      }
-    } catch (err) {
-      console.error("Failed to delete task", err);
-    }
+    toast.warning("Move task to trash?", {
+      description: "You can recover it later from settings.",
+      action: {
+        label: "Archive",
+        onClick: async () => {
+          try {
+            const res = await fetch('/api/tasks/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: taskId }),
+            });
+            if (res.ok) {
+              setSelectedTask(null);
+              setExpandedTaskId(null);
+              fetchTasks();
+              toast.success("Task archived successfully");
+            }
+          } catch (err) {
+            toast.error("Failed to archive task");
+          }
+        },
+      },
+    });
   };
 
   const toggleExpand = (taskId: number) => {

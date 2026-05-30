@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { Tasks } from './views/Tasks';
 import { Settings } from './views/Settings';
 import type { User } from './types';
+import { Toaster, toast } from 'sonner';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -138,6 +139,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background text-foreground transition-colors duration-500 overflow-hidden">
+      <Toaster theme={isDarkMode ? 'dark' : 'light'} position="top-center" closeButton />
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 

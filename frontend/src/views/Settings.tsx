@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, ShieldAlert, RotateCcw, Archive, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, ShieldAlert, RotateCcw, Archive, LayoutGrid, Edit3, Check, X } from 'lucide-react';
 import type { Task } from '../types';
+import { toast } from 'sonner';
 
 interface Environment {
   id: number;
@@ -17,6 +18,11 @@ export function Settings() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Edit State
+  const [editingEnvId, setEditingEnvId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
 
   useEffect(() => {
     if (activeTab === 'active') {
@@ -39,7 +45,6 @@ export function Settings() {
       const resTask = await fetch('/api/tasks/archived');
       if (resEnv.ok) setArchivedEnvs(await resEnv.json());
       if (resTask.ok) setArchivedTasks(await resTask.json());
-      // Also fetch active envs to resolve environment names for tasks
       fetchEnvs();
     } catch (err) { console.error(err); }
   };
@@ -64,15 +69,47 @@ export function Settings() {
     } finally { setIsLoading(false); }
   };
 
+  const startEditing = (env: Environment) => {
+    setEditingEnvId(env.id);
+    setEditName(env.name);
+    setEditDesc(env.description);
+  };
+
+  const handleUpdateEnv = async (id: number) => {
+    try {
+      const res = await fetch('/api/environments/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: editName, description: editDesc }),
+      });
+      if (res.ok) {
+        setEditingEnvId(null);
+        fetchEnvs();
+      }
+    } catch (err) { console.error(err); }
+  };
+
   const handleDeleteEnv = async (id: number) => {
-    if (!confirm("Archive this environment?")) return;
-    const res = await fetch('/api/environments/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+    toast.warning("Archive this environment?", {
+      description: "It will be hidden from the workspace.",
+      action: {
+        label: "Archive",
+        onClick: async () => {
+          const res = await fetch('/api/environments/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          });
+          if (res.ok) {
+            fetchEnvs();
+            toast.success("Environment archived");
+          } else {
+            const data = await res.json();
+            toast.error(data.message || "Cannot archive environment");
+          }
+        }
+      }
     });
-    if (res.ok) fetchEnvs();
-    else alert("Cannot archive environment (it may have active tasks)");
   };
 
   const handleRestoreEnv = async (id: number) => {
@@ -81,7 +118,10 @@ export function Settings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
-    if (res.ok) fetchArchived();
+    if (res.ok) {
+      fetchArchived();
+      toast.success("Environment restored");
+    }
   };
 
   const handleRestoreTask = async (id: number) => {
@@ -90,7 +130,10 @@ export function Settings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
-    if (res.ok) fetchArchived();
+    if (res.ok) {
+      fetchArchived();
+      toast.success("Task restored");
+    }
   };
 
   return (
@@ -126,7 +169,7 @@ export function Settings() {
       {activeTab === 'active' ? (
         <section className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm self-start">
               <h4 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Plus className="h-3.5 w-3.5" />New Environment</h4>
               <form onSubmit={handleCreateEnv} className="space-y-4">
                 <input
@@ -147,14 +190,38 @@ export function Settings() {
 
             <div className="space-y-3">
               {envs.map(env => (
-                <div key={env.id} className="group bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-ring/20 transition-all">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold truncate">{env.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{env.description || 'No description'}</p>
-                  </div>
-                  <button onClick={() => handleDeleteEnv(env.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                <div key={env.id} className="group bg-card border border-border rounded-xl p-4 transition-all hover:border-ring/20">
+                  {editingEnvId === env.id ? (
+                    <div className="space-y-3">
+                      <input 
+                        className="w-full bg-muted/50 border border-border rounded-lg px-3 py-1 text-sm font-bold focus:outline-none"
+                        value={editName} onChange={e => setEditName(e.target.value)}
+                      />
+                      <textarea 
+                        className="w-full bg-muted/50 border border-border rounded-lg px-3 py-1 text-xs focus:outline-none resize-none h-16"
+                        value={editDesc} onChange={e => setEditDesc(e.target.value)}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setEditingEnvId(null)} className="p-1.5 hover:bg-muted rounded-md text-muted-foreground"><X className="h-4 w-4" /></button>
+                        <button onClick={() => handleUpdateEnv(env.id)} className="p-1.5 bg-foreground text-background rounded-md shadow-sm"><Check className="h-4 w-4" /></button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold truncate">{env.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{env.description || 'No description'}</p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onClick={() => startEditing(env)} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" title="Edit">
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteEnv(env.id)} className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg" title="Archive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -199,24 +266,12 @@ export function Settings() {
                       Archived on {task.deleted_at ? new Date(task.deleted_at).toLocaleDateString() : 'N/A'} • ID: {task.id}
                     </p>
                   </div>
-                  <button 
-                    onClick={() => handleRestoreTask(task.id)} 
-                    className="shrink-0 p-2 text-foreground hover:bg-card rounded-lg border border-transparent hover:border-border transition-all shadow-sm self-center" 
-                    title="Restore Task"
-                  >
+                  <button onClick={() => handleRestoreTask(task.id)} className="shrink-0 p-2 text-foreground hover:bg-card rounded-lg border border-transparent hover:border-border transition-all shadow-sm self-center" title="Restore Task">
                     <RotateCcw className="h-4 w-4" />
                   </button>
                 </div>
               ))}
               {archivedTasks.length === 0 && <p className="text-sm text-muted-foreground italic ml-1">No archived tasks.</p>}
-            </div>
-          </div>
-
-          <div className="p-6 bg-orange-500/5 border border-orange-500/10 rounded-2xl flex items-start gap-4">
-            <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500"><ShieldAlert className="h-5 w-5" /></div>
-            <div>
-              <h4 className="text-sm font-bold text-orange-500 uppercase tracking-widest mb-1">Restoration Note</h4>
-              <p className="text-xs text-orange-500/60 leading-relaxed max-w-md">Restoring an item will immediately make it visible again in the Engineering Workspace and active filters.</p>
             </div>
           </div>
         </section>
