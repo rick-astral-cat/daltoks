@@ -13,7 +13,6 @@ import {
   Timer,
   X,
   UserPlus,
-  Filter,
   Trash2
 } from 'lucide-react';
 

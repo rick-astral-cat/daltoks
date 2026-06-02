@@ -4,8 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Tasks } from './views/Tasks';
 import { Settings } from './views/Settings';
-import type { User } from './types';
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {

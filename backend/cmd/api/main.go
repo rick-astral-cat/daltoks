@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -14,7 +15,11 @@ import (
 
 	"github.com/ricar/daltoks/backend/internal/auth"
 	"github.com/ricar/daltoks/backend/internal/db"
+	"github.com/ricar/daltoks/backend/internal/spa"
 )
+
+//go:embed dist/*
+var staticAssets embed.FS
 
 func main() {
 	createUser := flag.String("create-user", "", "Create an internal user (format: username:password)")
@@ -46,8 +51,17 @@ func main() {
 	// 1. Initialize custom Mux (Multiplexer)
 	mux := http.NewServeMux()
 
-	// Register all routes from routes.go
+	// Register all API routes from routes.go
 	registerRoutes(mux)
+
+	// Register SPA handler for the root and any other non-API routes
+	// This will serve the embedded React files
+	spaHandler := spa.Handler{
+		StaticFS:   staticAssets,
+		StaticPath: "dist",
+		IndexPath:  "index.html",
+	}
+	mux.Handle("/", spaHandler)
 
 	// 2. Configure a structured HTTP Server
 	// Setting timeouts is crucial for a 1GB RAM Debian server to prevent resource exhaustion

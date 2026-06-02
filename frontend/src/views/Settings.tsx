@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, ShieldAlert, RotateCcw, Archive, LayoutGrid, Edit3, Check, X } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Archive, LayoutGrid, Edit3, Check, X } from 'lucide-react';
 import type { Task } from '../types';
 import { toast } from 'sonner';
 
