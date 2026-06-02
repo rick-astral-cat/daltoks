@@ -2,25 +2,31 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/ricar/daltoks/backend/internal/auth"
 	"github.com/ricar/daltoks/backend/internal/db"
+	"github.com/ricar/daltoks/backend/internal/spa"
 )
+
+//go:embed dist/*
+var staticAssets embed.FS
 
 func main() {
 	createUser := flag.String("create-user", "", "Create an internal user (format: username:password)")
+	createEnv := flag.String("create-env", "", "Create an environment (format: 'Name:Description')")
 	flag.Parse()
 
 	// Initialize database
-	// Use a relative path that assumes the application is run from the directory where the DB resides.
-	// For local development in GoLand, ensure the Working Directory is set to the 'backend' folder.
 	err := db.InitDB("daltoks.db")
 	if err != nil {
 		log.Fatal(err)
@@ -31,17 +37,31 @@ func main() {
 		}
 	}()
 
-	// Process internal user creation if flag is provided
+	// Process CLI flags
 	if *createUser != "" {
 		auth.HandleCreateUser(*createUser)
+		return
+	}
+
+	if *createEnv != "" {
+		handleCreateEnv(*createEnv)
 		return
 	}
 
 	// 1. Initialize custom Mux (Multiplexer)
 	mux := http.NewServeMux()
 
-	// Register all routes from routes.go
+	// Register all API routes from routes.go
 	registerRoutes(mux)
+
+	// Register SPA handler for the root and any other non-API routes
+	// This will serve the embedded React files
+	spaHandler := spa.Handler{
+		StaticFS:   staticAssets,
+		StaticPath: "dist",
+		IndexPath:  "index.html",
+	}
+	mux.Handle("/", spaHandler)
 
 	// 2. Configure a structured HTTP Server
 	// Setting timeouts is crucial for a 1GB RAM Debian server to prevent resource exhaustion
@@ -79,4 +99,24 @@ func main() {
 	}
 
 	log.Println("Server stopped cleanly")
+}
+
+func handleCreateEnv(input string) {
+	parts := strings.SplitN(input, ":", 2)
+	name := parts[0]
+	desc := ""
+	if len(parts) > 1 {
+		desc = parts[1]
+	}
+
+	if name == "" {
+		log.Fatal("Environment name cannot be empty")
+	}
+
+	_, err := db.DB.Exec(`INSERT INTO environments (name, description) VALUES (?, ?)`, name, desc)
+	if err != nil {
+		log.Fatal("Error creating environment: ", err)
+	}
+
+	fmt.Printf("Environment '%s' created successfully.\n", name)
 }

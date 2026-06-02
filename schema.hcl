@@ -18,6 +18,10 @@ table "users" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
   primary_key {
     columns = [column.id]
   }
@@ -65,6 +69,39 @@ table "sessions" {
   }
 }
 
+table "environments" {
+  schema = schema.main
+  column "id" {
+    null           = false
+    type           = integer
+    auto_increment = true
+  }
+  column "name" {
+    null = false
+    type = text
+  }
+  column "description" {
+    null = true
+    type = text
+  }
+  column "created_at" {
+    null    = false
+    type    = datetime
+    default = sql("CURRENT_TIMESTAMP")
+  }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  index "idx_env_name" {
+    unique  = true
+    columns = [column.name]
+  }
+}
+
 table "tasks" {
   schema = schema.main
   column "id" {
@@ -72,7 +109,15 @@ table "tasks" {
     type           = integer
     auto_increment = true
   }
-  column "user_id" {
+  column "creator_id" {
+    null = false
+    type = integer
+  }
+  column "assignee_id" {
+    null = true
+    type = integer
+  }
+  column "environment_id" {
     null = false
     type = integer
   }
@@ -87,7 +132,7 @@ table "tasks" {
   column "status" {
     null    = false
     type    = text
-    default = "pending"
+    default = "todo"
   }
   column "created_at" {
     null    = false
@@ -99,11 +144,68 @@ table "tasks" {
     type    = datetime
     default = sql("CURRENT_TIMESTAMP")
   }
+  column "deleted_at" {
+    null = true
+    type = datetime
+  }
   primary_key {
     columns = [column.id]
   }
-  foreign_key "user_id_fk" {
-    columns     = [column.user_id]
+  foreign_key "creator_id_fk" {
+    columns     = [column.creator_id]
+    ref_columns = [table.users.column.id]
+    on_update   = NO_ACTION
+    on_delete   = CASCADE
+  }
+  foreign_key "assignee_id_fk" {
+    columns     = [column.assignee_id]
+    ref_columns = [table.users.column.id]
+    on_update   = NO_ACTION
+    on_delete   = SET_NULL
+  }
+  foreign_key "environment_id_fk" {
+    columns     = [column.environment_id]
+    ref_columns = [table.environments.column.id]
+    on_update   = NO_ACTION
+    on_delete   = RESTRICT
+  }
+}
+
+table "task_updates" {
+  schema = schema.main
+  column "id" {
+    null           = false
+    type           = integer
+    auto_increment = true
+  }
+  column "task_id" {
+    null = false
+    type = integer
+  }
+  column "author_id" {
+    null = false
+    type = integer
+  }
+  column "content" {
+    null = false
+    type = text
+  }
+  column "created_at" {
+    null    = false
+    type    = datetime
+    default = sql("CURRENT_TIMESTAMP")
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  foreign_key "task_id_fk" {
+    columns     = [column.task_id]
+    ref_columns = [table.tasks.column.id]
+    on_update   = NO_ACTION
+    on_delete   = CASCADE
+  }
+  foreign_key "author_id_fk" {
+    columns     = [column.author_id]
     ref_columns = [table.users.column.id]
     on_update   = NO_ACTION
     on_delete   = CASCADE

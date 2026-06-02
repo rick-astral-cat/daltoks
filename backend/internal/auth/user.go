@@ -63,3 +63,31 @@ func HandleCreateUser(input string) {
 
 	fmt.Printf("User '%s' created successfully.\n", username)
 }
+
+// ListUsersHandler returns all users for assignment purposes.
+func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DB.Query(`SELECT id, username FROM users ORDER BY username ASC`)
+	if err != nil {
+		log.Printf("Error fetching users: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type UserSummary struct {
+		ID       int64  `json:"id"`
+		Username string `json:"username"`
+	}
+
+	users := []UserSummary{}
+	for rows.Next() {
+		var u UserSummary
+		if err := rows.Scan(&u.ID, &u.Username); err != nil {
+			continue
+		}
+		users = append(users, u)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
